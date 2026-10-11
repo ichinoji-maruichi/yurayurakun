@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ゆらゆらくん｜イラストを立体的に揺らす</title>
+<!-- Google アナリティクス：GA_ID を自分の測定ID（G-から始まる）に置き換えると有効になります -->
+<script>
+  window.GA_ID = 'G-XXXXXXXXXX';
+  if (window.GA_ID !== 'G-XXXXXXXXXX'){
+    const s = document.createElement('script');
+    s.async = true; s.src = 'https://www.googletagmanager.com/gtag/js?id=' + window.GA_ID;
+    document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function(){ dataLayer.push(arguments); };
+    gtag('js', new Date()); gtag('config', window.GA_ID);
+  }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF0F7; --panel:#FFFFFF; --ink:#1D2340; --sub:#5B6285; --line:#CDD1E6;
+  --soft:#E3E6F3; --pink:#E8467C; --teal:#16999A;
+  color-scheme:light; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#171A2C; --panel:#21253B; --ink:#E9EBF7; --sub:#A3A9C9; --line:#363B5A;
+    --soft:#2A2F49; --pink:#FF6B9A; --teal:#3CC2C1; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#171A2C; --panel:#21253B; --ink:#E9EBF7; --sub:#A3A9C9; --line:#363B5A;
+  --soft:#2A2F49; --pink:#FF6B9A; --teal:#3CC2C1; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Meiryo",sans-serif;
+  font-size:15px;line-height:1.7;
+}
+[hidden]{display:none!important}
+
+.top{max-width:1180px;margin:0 auto;padding:28px 20px 6px}
+h1{
+  font-family:"Dela Gothic One","M PLUS Rounded 1c",sans-serif;font-weight:400;
+  font-size:clamp(30px,5vw,42px);line-height:1.1;margin:0;letter-spacing:.02em;
+  display:inline-block;transform-origin:50% 100%;animation:sway 1.4s ease-in-out .2s 1;
+}
+@keyframes sway{0%,100%{transform:rotate(0)}20%{transform:rotate(-4deg)}45%{transform:rotate(3deg)}70%{transform:rotate(-1.5deg)}}
+@media (prefers-reduced-motion:reduce){h1{animation:none}}
+.lead{margin:8px 0 0;color:var(--sub);max-width:60ch}
+.titlerow{display:flex;align-items:center;gap:12px}
+.helpbtn{
+  width:34px;height:34px;border-radius:50%;border:2px solid var(--ink);background:var(--panel);color:var(--ink);
+  font:700 17px/1 "M PLUS Rounded 1c",sans-serif;cursor:pointer;flex:none;
+}
+.helpbtn:hover{background:var(--ink);color:var(--panel)}
+.helpbtn:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+dialog.help{
+  width:min(680px,calc(100vw - 24px));max-height:calc(100vh - 48px);padding:0;border:1px solid var(--line);
+  border-radius:18px;background:var(--panel);color:var(--ink);
+}
+dialog.help::backdrop{background:rgba(20,24,45,.55)}
+.help .hhead{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;
+  padding:14px 18px;background:var(--panel);border-bottom:1px solid var(--line)}
+.help .hhead h2{margin:0;font-family:"Dela Gothic One","M PLUS Rounded 1c",sans-serif;font-weight:400;font-size:22px}
+.help .hbody{padding:4px 18px 20px;font-size:14px}
+.help h3{font-size:15px;margin:20px 0 6px;padding-left:10px;border-left:4px solid var(--pink)}
+.help dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px}
+.help dt{font-weight:700;white-space:nowrap}
+.help dd{margin:0;color:var(--sub)}
+@media (max-width:520px){.help dl{grid-template-columns:1fr}.help dd{margin-bottom:6px}}
+.help ol{margin:0;padding-left:1.4em}
+.help p{margin:6px 0}
+.help .foot{margin-top:22px;padding-top:14px;border-top:1px solid var(--line);text-align:center}
+.help .foot a{color:var(--pink);font-weight:700}
+
+.layout{
+  max-width:1180px;margin:0 auto;padding:16px 20px 48px;
+  display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start;
+}
+@media (max-width:860px){.layout{grid-template-columns:1fr}}
+.stage,.card{background:var(--panel);border:1px solid var(--line);border-radius:18px}
+.stage{padding:14px}
+/* PC：絵の列は画面に固定し、設定の列だけがスクロールする */
+@media (min-width:861px){
+  .stage{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
+  #cv{max-height:max(240px, calc(100vh - 230px))!important}
+}
+/* スマホ：絵を画面上部に固定し、その下で設定がスクロールする */
+@media (max-width:860px){
+  .stage{position:sticky;top:0;z-index:5;padding:10px;box-shadow:0 6px 16px rgba(20,24,45,.12)}
+  #cv{max-height:36vh!important}
+  .viewer{padding:6px}
+  .drop{min-height:200px}
+  .status{margin-top:6px;font-size:13px}
+}
+
+.tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px}
+.tool{
+  font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  padding:5px 12px;border-radius:999px;cursor:pointer;
+}
+.tool[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.tool.mask[aria-pressed="true"]{background:var(--pink);border-color:var(--pink);color:#fff}
+.tools .sep{width:1px;height:22px;background:var(--line);margin:0 2px}
+.brush{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--sub)}
+.brush input{width:110px}
+.toolhint{font-size:13px;color:var(--sub);margin:-4px 2px 8px;min-height:1.2em}
+
+.drop{
+  border:2px dashed var(--line);border-radius:12px;min-height:360px;
+  display:grid;place-items:center;text-align:center;padding:24px;cursor:pointer;color:var(--sub);
+}
+.drop strong{display:block;font-size:20px;color:var(--ink);margin-bottom:4px}
+.drop.over,.drop:hover{border-color:var(--pink);background:var(--soft)}
+.viewer{display:flex;justify-content:center;border-radius:10px;background:var(--soft);padding:10px}
+.wrap{position:relative;display:inline-block;line-height:0}
+#cv{display:block;max-width:100%;max-height:72vh;width:auto;height:auto;border-radius:4px}
+#cv.paint{touch-action:none;cursor:none}
+#cv.focus{cursor:crosshair}
+.cursor{position:absolute;border:2px solid #fff;outline:1px solid rgba(0,0,0,.6);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%)}
+
+.status{min-height:1.7em;margin:10px 2px 0;font-size:14px}
+.status.warn{color:var(--pink)}
+.prog{height:6px;border-radius:3px;background:var(--soft);overflow:hidden;margin-top:6px}
+.prog div{height:100%;width:0;background:var(--teal);transition:width .2s}
+.prog.busy div{width:35%;animation:slide 1.1s ease-in-out infinite}
+@keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(300%)}}
+@media (prefers-reduced-motion:reduce){.prog.busy div{animation:none;width:100%;opacity:.5}}
+
+.panel{display:flex;flex-direction:column;gap:12px}
+.card{padding:14px 16px}
+.field{display:grid;gap:5px;margin-top:12px}
+.card > .field:first-child{margin-top:0}
+.head{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;font-weight:700}
+.head output{font-weight:400;color:var(--sub);font-variant-numeric:tabular-nums}
+.note{font-size:12px;color:var(--sub);margin:0}
+
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:3px;background:var(--soft);border-radius:10px;padding:3px}
+.seg label{position:relative;display:block;cursor:pointer}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg span{display:block;text-align:center;padding:6px 4px;border-radius:8px;font-size:14px;color:var(--sub)}
+.seg input:checked+span{background:var(--panel);color:var(--ink);font-weight:700;box-shadow:0 1px 0 var(--line)}
+.seg input:focus-visible+span{outline:2px solid var(--teal);outline-offset:1px}
+
+.dialrow{display:flex;align-items:center;gap:16px}
+.dial{width:112px;height:112px;flex:none;touch-action:none;cursor:grab;border-radius:50%}
+.dial:active{cursor:grabbing}
+.dial:focus-visible{outline:2px solid var(--teal);outline-offset:3px}
+.dial .ring{fill:var(--soft);stroke:var(--line);stroke-width:1.5}
+.dial .tick{stroke:var(--sub);stroke-width:1.5;stroke-linecap:round}
+.dial .axis{stroke:var(--ink);stroke-width:3;stroke-linecap:round}
+.dial .knob{fill:var(--pink)}
+.dial .tail{fill:var(--ink)}
+.dialinfo{font-size:13px;color:var(--sub)}
+.dialinfo b{display:block;font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums}
+
+input[type=range]{width:100%;accent-color:var(--pink)}
+select{font:inherit;font-size:14px;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+.check{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;margin-top:12px}
+.check input{accent-color:var(--pink);width:17px;height:17px}
+
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.btn{font:inherit;font-size:14px;font-weight:700;border:none;border-radius:999px;padding:9px 16px;cursor:pointer;background:var(--soft);color:var(--ink)}
+.btn.main{background:var(--pink);color:#fff;flex:1}
+.btn:disabled,.tool:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,.tool:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+
+details summary{cursor:pointer;font-weight:700;list-style:none;display:flex;justify-content:space-between}
+details summary::-webkit-details-marker{display:none}
+details summary::after{content:"＋";color:var(--sub)}
+details[open] summary::after{content:"－"}
+details[open] summary{margin-bottom:4px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="titlerow">
+    <h1>ゆらゆらくん</h1>
+    <button class="helpbtn" id="btnHelp" aria-label="使い方を見る" title="使い方">?</button>
+  </div>
+  <p class="lead">イラストをアップすると、AIが奥行きを読み取って立体的に揺れるアニメにします。GIF・APNG・動画で保存できます。画像はブラウザの中だけで処理されます。</p>
+</header>
+
+<main class="layout">
+  <section class="stage">
+    <div class="tools" id="tools" hidden>
+      <button class="tool" data-tool="view" aria-pressed="true">見る</button>
+      <button class="tool" data-tool="focus" aria-pressed="false">ピント</button>
+      <span class="sep"></span>
+      <button class="tool mask" data-tool="mask" aria-pressed="false">揺らす所をなぞる</button>
+      <button class="tool mask" data-tool="erase" aria-pressed="false">なぞりを消す</button>
+      <span class="sep"></span>
+      <button class="tool" data-tool="near" aria-pressed="false">手前にする</button>
+      <button class="tool" data-tool="far" aria-pressed="false">奥にする</button>
+      <span class="sep"></span>
+      <button class="tool" id="btnUndo" disabled>元に戻す</button>
+      <label class="brush" id="brushField" hidden>ペンの太さ
+        <input type="range" data-key="brush" min="1" max="20" step="0.5" value="6">
+      </label>
+    </div>
+    <p class="toolhint" id="toolhint" hidden></p>
+
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="画像を選ぶ">
+      <div>
+        <strong>画像をドロップ</strong>
+        クリックで選ぶ・Ctrl+V で貼り付けもOK
+      </div>
+    </div>
+
+    <div class="viewer" id="viewer" hidden>
+      <div class="wrap" id="wrap">
+        <canvas id="cv"></canvas>
+        <div class="cursor" id="cursor" hidden></div>
+      </div>
+    </div>
+
+    <p class="status" id="status" aria-live="polite"></p>
+    <div class="prog" id="prog" hidden><div></div></div>
+  </section>
+
+  <aside class="panel">
+    <div class="card">
+      <div class="field">
+        <div class="head">動き</div>
+        <div class="seg">
+          <label><input type="radio" name="motion" data-key="motion" value="swing" checked><span>往復</span></label>
+          <label><input type="radio" name="motion" data-key="motion" value="two"><span>2コマ</span></label>
+          <label><input type="radio" name="motion" data-key="motion" value="orbit"><span>ぐるっと</span></label>
+        </div>
+      </div>
+      <div class="field" id="dirField">
+        <div class="head">揺れる方向</div>
+        <div class="dialrow">
+          <svg class="dial" id="dial" viewBox="0 0 100 100" tabindex="0" role="slider"
+               aria-label="揺れる方向" aria-valuemin="0" aria-valuemax="359" aria-valuenow="0">
+            <circle class="ring" cx="50" cy="50" r="46"/>
+            <g id="ticks"></g>
+            <line class="axis" id="dialAxis" x1="12" y1="50" x2="88" y2="50"/>
+            <circle class="tail" id="dialTail" cx="12" cy="50" r="4"/>
+            <circle class="knob" id="dialKnob" cx="88" cy="50" r="8"/>
+          </svg>
+          <div class="dialinfo"><b id="angleOut">0°</b>ドラッグで回せます。<br>ダブルクリックで横に戻ります。</div>
+        </div>
+      </div>
+      <div class="field" id="orbitField" hidden>
+        <div class="head">回る向き</div>
+        <div class="seg">
+          <label><input type="radio" name="orbitDir" data-key="orbitDir" data-num value="1" checked><span>左回り</span></label>
+          <label><input type="radio" name="orbitDir" data-key="orbitDir" data-num value="-1"><span>右回り</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <div class="head">揺れ幅 <output data-for="amp"></output></div>
+        <input type="range" data-key="amp" min="0.3" max="6" step="0.1" value="2.5">
+      </div>
+      <div class="field">
+        <div class="head">1回の時間 <output data-for="period"></output></div>
+        <input type="range" data-key="period" min="0.3" max="4" step="0.1" value="1.6">
+      </div>
+      <div class="field">
+        <div class="head">保存形式</div>
+        <div class="seg">
+          <label><input type="radio" name="fmt" data-key="fmt" value="gif" checked><span>GIF</span></label>
+          <label><input type="radio" name="fmt" data-key="fmt" value="apng"><span>APNG</span></label>
+          <label><input type="radio" name="fmt" data-key="fmt" value="video"><span>動画</span></label>
+        </div>
+        <p class="note" id="fmtNote"></p>
+      </div>
+      <div class="btns">
+        <button class="btn main" id="btnSave" disabled>保存</button>
+        <button class="btn" id="btnNew">別の画像</button>
+      </div>
+    </div>
+
+    <details class="card" id="maskCard">
+      <summary>なぞった範囲</summary>
+      <div class="field">
+        <div class="head">なぞった所の揺れ <output data-for="boost"></output></div>
+        <input type="range" data-key="boost" min="0.5" max="4" step="0.1" value="2">
+      </div>
+      <div class="field">
+        <div class="head">それ以外の揺れ <output data-for="outside"></output></div>
+        <input type="range" data-key="outside" min="0" max="1" step="0.05" value="0">
+        <p class="note">0%にすると、なぞった所だけが動きます。</p>
+      </div>
+      <div class="field">
+        <div class="head">範囲のぼかし <output data-for="feather"></output></div>
+        <input type="range" data-key="feather" min="0" max="40" step="1" value="10">
+      </div>
+      <p class="note" style="margin-top:12px">なぞった範囲がない時は、絵全体が揺れます。</p>
+      <div class="btns"><button class="btn" id="btnClearMask">なぞりを全部消す</button></div>
+    </details>
+
+    <details class="card">
+      <summary>奥行きの調整</summary>
+      <div class="field">
+        <div class="head">奥行きの作り方</div>
+        <select data-key="depthSrc">
+          <option value="ai">AIで推定（おすすめ）</option>
+          <option value="brightness">明るい所を手前にする</option>
+        </select>
+        <p class="note">AIは初回だけモデル（約30MB）を読み込みます。</p>
+      </div>
+      <div class="field">
+        <div class="head">ピントの位置 <output data-for="focus"></output></div>
+        <input type="range" data-key="focus" id="rngFocus" min="0" max="1" step="0.01" value="0.5">
+        <p class="note">この奥行きの所が止まって見えます。「ピント」ツールで絵をタップしても合わせられます。</p>
+      </div>
+      <div class="field">
+        <div class="head">背景カット <output data-for="cut"></output></div>
+        <input type="range" data-key="cut" min="0" max="0.8" step="0.01" value="0">
+      </div>
+      <div class="field">
+        <div class="head">奥行きのカーブ <output data-for="gamma"></output></div>
+        <input type="range" data-key="gamma" min="0.4" max="2.5" step="0.05" value="1">
+      </div>
+      <div class="field">
+        <div class="head">なめらかさ <output data-for="blur"></output></div>
+        <input type="range" data-key="blur" min="0" max="20" step="1" value="4">
+      </div>
+      <div class="field">
+        <div class="head">輪郭の補正 <output data-for="dilate"></output></div>
+        <input type="range" data-key="dilate" min="0" max="10" step="1" value="3">
+        <p class="note">キャラの縁が背景に引っぱられて伸びるのを抑えます。</p>
+      </div>
+      <label class="check"><input type="checkbox" data-key="invert"> 奥行きを反転する</label>
+      <div class="btns">
+        <button class="btn" id="btnClearPaint">塗った奥行きをリセット</button>
+        <button class="btn" id="btnSaveDepth" disabled>奥行き画像を保存</button>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary>仕上がり</summary>
+      <div class="field">
+        <div class="head">背景ぼかし <output data-for="bokeh"></output></div>
+        <input type="range" data-key="bokeh" min="0" max="1" step="0.05" value="0">
+        <p class="note">ピントから離れた奥行きほどぼけます。</p>
+      </div>
+      <div class="field">
+        <div class="head">横幅</div>
+        <select data-key="outW" data-num>
+          <option value="480">480px</option>
+          <option value="600" selected>600px</option>
+          <option value="720">720px</option>
+          <option value="1080">1080px</option>
+        </select>
+        <p class="note">GIF・APNGは大きいほどファイルが重くなります。</p>
+      </div>
+    </details>
+  </aside>
+</main>
+
+<dialog class="help" id="help" aria-labelledby="helpTitle">
+  <div class="hhead">
+    <h2 id="helpTitle">使い方</h2>
+    <button class="btn" id="btnHelpClose">閉じる</button>
+  </div>
+  <div class="hbody">
+    <h3>かんたん3ステップ</h3>
+    <ol>
+      <li>画像をドロップするか、クリックで選びます（Ctrl+Vで貼り付けもOK）。</li>
+      <li>AIが奥行きを読み取ると、自動で揺れ始めます。「ピント」ツールでキャラの顔をタップすると見やすくなります。</li>
+      <li>保存形式を選んで「保存」を押します。</li>
+    </ol>
+
+    <h3>画像の上のツール</h3>
+    <dl>
+      <dt>見る</dt><dd>アニメーションを確認します。</dd>
+      <dt>ピント</dt><dd>タップした所が止まって見える中心になります。</dd>
+      <dt>揺らす所をなぞる</dt><dd>なぞった所（ピンク表示）だけを揺らします。何もなぞらなければ絵全体が揺れます。</dd>
+      <dt>なぞりを消す</dt><dd>なぞった範囲を消します。</dd>
+      <dt>手前にする／奥にする</dt><dd>奥行き画像（白いほど手前）が表示され、なぞった所の奥行きを直せます。AIの推定がおかしい所の修正に使います。</dd>
+      <dt>元に戻す</dt><dd>ペン操作を1回ずつ戻します（Ctrl+Zでも可）。</dd>
+      <dt>ペンの太さ</dt><dd>ペン系のツールを選んでいる時に調整できます。</dd>
+    </dl>
+
+    <h3>動き</h3>
+    <dl>
+      <dt>往復</dt><dd>なめらかに行ったり来たりします。</dd>
+      <dt>2コマ</dt><dd>2枚を交互に切り替える、定番のカクカクした揺れです。</dd>
+      <dt>ぐるっと</dt><dd>円を描くように視点が回ります。「回る向き」で左回り・右回りを選べます。</dd>
+      <dt>揺れる方向</dt><dd>ダイヤルをドラッグして揺れる向きを決めます（往復・2コマ）。45°ごとに吸い付き、ダブルクリックで横（0°）に戻ります。キーボードの矢印キーでも回せます。</dd>
+      <dt>揺れ幅</dt><dd>動きの大きさです。大きくしすぎると輪郭が伸びて見えます。</dd>
+      <dt>1回の時間</dt><dd>1往復（または1周）にかかる秒数です。</dd>
+    </dl>
+
+    <h3>なぞった範囲</h3>
+    <dl>
+      <dt>なぞった所の揺れ</dt><dd>なぞった所を、全体の揺れ幅の何倍動かすかです。</dd>
+      <dt>それ以外の揺れ</dt><dd>なぞっていない所の動きです。0%で完全に止まります。</dd>
+      <dt>範囲のぼかし</dt><dd>なぞった所と周りの境目をなじませます。</dd>
+    </dl>
+    <p>一部だけを上下に揺らしたい時は、ダイヤルを90°にして、なぞった所の揺れを2〜3倍にするのがおすすめです。</p>
+
+    <h3>奥行きの調整</h3>
+    <dl>
+      <dt>奥行きの作り方</dt><dd>「AIで推定」がおすすめです。AIが使えない時は「明るい所を手前にする」でも作れます。</dd>
+      <dt>ピントの位置</dt><dd>止まって見える奥行きです。ピントツールのタップでも設定できます。</dd>
+      <dt>背景カット</dt><dd>奥の方をまっ平らにして、キャラだけを浮かせます。</dd>
+      <dt>奥行きのカーブ</dt><dd>小さいほど全体が手前に、大きいほど一番手前だけが飛び出します。</dd>
+      <dt>なめらかさ</dt><dd>奥行きの細かいデコボコをならして、動きをなめらかにします。</dd>
+      <dt>輪郭の補正</dt><dd>キャラの縁の色が背景に引っぱられて伸びるのを抑えます。</dd>
+      <dt>奥行きを反転</dt><dd>手前と奥を入れ替えます。</dd>
+    </dl>
+
+    <h3>仕上がりと保存</h3>
+    <dl>
+      <dt>背景ぼかし</dt><dd>ピントから離れた所ほどぼかして、カメラで撮ったような雰囲気にします。</dd>
+      <dt>横幅</dt><dd>保存する画像の横幅です。</dd>
+      <dt>GIF</dt><dd>どこでも再生できる定番形式です。Xの上限は15MBで、超えた時はお知らせします。</dd>
+      <dt>APNG</dt><dd>色がきれいなまま保存できるアニメPNGです。ファイルは重めです。</dd>
+      <dt>動画</dt><dd>MP4（ブラウザによってはWebM）で保存します。軽くてきれいなので、Xへの投稿におすすめです。録画中はタブを開いたままにしてください。</dd>
+    </dl>
+
+    <h3>知っておいてほしいこと</h3>
+    <p>AIは初回だけ約30MBのモデルを読み込みます。2回目以降はブラウザに保存されたものを使うので速くなります。</p>
+    <p>画像の処理はすべてブラウザの中で行い、画像がどこかに送られることはありません。</p>
+
+    <div class="foot">
+      <p>作った人：<a href="https://ichinoji-maruichi.github.io/" target="_blank" rel="noopener">マルイチソフト</a></p>
+    </div>
+  </div>
+</dialog>
+
+<input type="file" id="file" accept="image/*" hidden>
+
+<script type="module">
+const TRANSFORMERS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1';
+const GIFENC_URL = 'https://cdn.jsdelivr.net/npm/gifenc@1.0.3/dist/gifenc.esm.js';
+const MODELS = ['onnx-community/depth-anything-v2-small', 'Xenova/depth-anything-small-hf'];
+const X_LIMIT = 15 * 1024 * 1024;
+
+const $ = id => document.getElementById(id);
+const S = {
+  motion:'swing', angle:0, orbitDir:1, amp:2.5, period:1.6, fmt:'gif',
+  focus:.5, depthSrc:'ai', invert:false, cut:0, gamma:1, blur:4, dilate:3,
+  boost:2, outside:0, feather:10, bokeh:0, outW:600, tool:'view', brush:6
+};
+const TOOL_HINT = {
+  view:'', focus:'タップした所が止まって見える中心になります。',
+  mask:'なぞった所だけが揺れます。揺れの強さは右の「なぞった範囲」で調整できます。',
+  erase:'なぞった範囲を消します。',
+  near:'なぞった所を手前に持ち上げます（白いほど手前）。', far:'なぞった所を奥に下げます（黒いほど奥）。'
+};
+const FMT_NOTE = {
+  gif:'どこでも再生できる定番。Xの上限は15MBです。',
+  apng:'色がきれいなまま保存できますが、ファイルは重めです。',
+  video:'軽くてきれい。Xに上げるならおすすめ。数回分ループした動画になります。'
+};
+
+/* ---------- 状態 ---------- */
+let srcCanvas = null, depthCanvas = null;
+let EW = 0, EH = 0, base = null, delta = null, mask = null, finalZ = null;
+let undoStack = [], job = 0, estPromise = null, rebuildQueued = false;
+let recording = false, recStart = 0, busyNow = false;
+const t0 = performance.now();
+
+/* ---------- 小物 ---------- */
+const mk = (w,h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+const ctx2d = c => c.getContext('2d', { willReadFrequently:true });
+const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
+const fmtSize = b => b >= 1048576 ? (b/1048576).toFixed(1) + 'MB' : Math.round(b/1024) + 'KB';
+function scaleCanvas(src, max){
+  const k = Math.min(1, max / Math.max(src.width, src.height));
+  const c = mk(Math.max(1, Math.round(src.width*k)), Math.max(1, Math.round(src.height*k)));
+  const x = ctx2d(c); x.imageSmoothingQuality = 'high';
+  x.drawImage(src, 0, 0, c.width, c.height);
+  return c;
+}
+function setStatus(msg, warn=false){ const s = $('status'); s.textContent = msg; s.classList.toggle('warn', warn); }
+function showProg(r){
+  const p = $('prog'); p.hidden = false;
+  if (r == null){ p.classList.add('busy'); p.firstElementChild.style.width = ''; }
+  else { p.classList.remove('busy'); p.firstElementChild.style.width = (r*100).toFixed(1) + '%'; }
+}
+const hideProg = () => { $('prog').hidden = true; };
+function download(blob, name){
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+}
+const tick = () => new Promise(r => setTimeout(r, 20));
+
+/* ---------- WebGL ---------- */
+const cv = $('cv');
+const gl = cv.getContext('webgl', { antialias:false, premultipliedAlpha:false });
+const VS = `attribute vec2 aPos;varying vec2 vUv;
+void main(){vUv=vec2((aPos.x+1.)*.5,(1.-aPos.y)*.5);gl_Position=vec4(aPos,0.,1.);}`;
+const FS = `precision highp float;
+varying vec2 vUv;
+uniform sampler2D uImg,uDep;
+uniform vec2 uOff,uTexel;
+uniform float uFocus,uBokeh,uShow;
+void main(){
+  vec2 uv=vUv;
+  if(uShow<.5){
+    for(int i=0;i<10;i++){vec4 d=texture2D(uDep,uv);uv=vUv-uOff*(d.r-uFocus)*d.g*4.;}
+  }
+  vec4 d=texture2D(uDep,uv);
+  vec3 col=texture2D(uImg,uv).rgb;
+  if(uShow<.5&&uBokeh>0.){
+    float r=uBokeh*abs(d.r-uFocus);
+    if(r>.4){
+      vec3 acc=col;
+      for(int i=1;i<24;i++){
+        float fi=float(i),rr=sqrt(fi/24.)*r,a=fi*2.39996;
+        acc+=texture2D(uImg,uv+vec2(cos(a),sin(a))*rr*uTexel).rgb;
+      }
+      col=acc/24.;
+    }
+  }
+  if(uShow>1.5) col=vec3(d.r);
+  else if(uShow>.5) col=mix(col,vec3(.91,.27,.49),d.b*.6);
+  gl_FragColor=vec4(col,1.);
+}`;
+let U = {}, texImg, texDep;
+function initGL(){
+  if (!gl) return false;
+  const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o);
+    if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; };
+  const p = gl.createProgram();
+  gl.attachShader(p, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, FS));
+  gl.linkProgram(p); gl.useProgram(p);
+  const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(p, 'aPos'); gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  for (const n of ['uImg','uDep','uOff','uTexel','uFocus','uBokeh','uShow']) U[n] = gl.getUniformLocation(p, n);
+  const mkTex = unit => { const t = gl.createTexture(); gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t);
+    for (const [k, v] of [[gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE],
+      [gl.TEXTURE_MIN_FILTER, gl.LINEAR],[gl.TEXTURE_MAG_FILTER, gl.LINEAR]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+    return t; };
+  texImg = mkTex(0); texDep = mkTex(1);
+  gl.uniform1i(U.uImg, 0); gl.uniform1i(U.uDep, 1);
+  return true;
+}
+function uploadImg(c){ gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texImg);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c); }
+function uploadDep(u8){ gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, texDep);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, EW, EH, 0, gl.RGBA, gl.UNSIGNED_BYTE, u8); }
+
+function offsetAt(t){
+  const T = S.period, A = S.amp / 100, asp = cv.width / cv.height;
+  let ox, oy;
+  if (S.motion === 'orbit'){
+    const ph = 2*Math.PI*t/T * S.orbitDir;
+    ox = A*Math.cos(ph); oy = A*Math.sin(ph);
+  } else {
+    const phase = S.motion === 'two' ? (((t % T) + T) % T < T/2 ? -1 : 1) : Math.sin(2*Math.PI*t/T);
+    const a = S.angle * Math.PI / 180;
+    ox = A*phase*Math.cos(a); oy = A*phase*Math.sin(a);
+  }
+  return [ox, -oy*asp]; // 画面の上方向 = uvの-y
+}
+function draw(t, show){
+  gl.viewport(0, 0, cv.width, cv.height);
+  const o = show === 0 ? offsetAt(t) : [0, 0];
+  gl.uniform2f(U.uOff, o[0], o[1]);
+  gl.uniform2f(U.uTexel, 1/cv.width, 1/cv.height);
+  gl.uniform1f(U.uFocus, S.focus);
+  gl.uniform1f(U.uBokeh, S.bokeh * 16);
+  gl.uniform1f(U.uShow, show);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+const toolShow = () => (S.tool === 'mask' || S.tool === 'erase') ? 1 : (S.tool === 'near' || S.tool === 'far') ? 2 : 0;
+function loop(now){
+  requestAnimationFrame(loop);
+  if (!finalZ) return;
+  const show = recording ? 0 : toolShow();
+  draw(((recording ? now - recStart : now - t0) / 1000), show);
+}
+function resizeCanvas(){
+  if (!srcCanvas) return;
+  const w = S.outW;
+  cv.width = w; cv.height = Math.max(2, Math.round(w * srcCanvas.height / srcCanvas.width / 2) * 2);
+}
+
+/* ---------- 画像の読み込み ---------- */
+function loadImage(file){
+  return new Promise((res, rej) => {
+    if (!file || !file.type.startsWith('image/')) return rej(new Error('not image'));
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); res(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('decode')); };
+    img.src = url;
+  });
+}
+async function loadFile(file){
+  if (busyNow) return;
+  try { setSource(await loadImage(file)); }
+  catch { setStatus('画像ファイルを読み込めませんでした。PNG・JPEG・WebPなどを選んでください。', true); }
+}
+function setSource(img){
+  const c = mk(img.naturalWidth, img.naturalHeight), x = ctx2d(c);
+  x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+  x.drawImage(img, 0, 0);
+  srcCanvas = scaleCanvas(c, 2048);
+  const e = scaleCanvas(srcCanvas, 1024); EW = e.width; EH = e.height;
+  base = new Float32Array(EW*EH); delta = new Float32Array(EW*EH); mask = new Float32Array(EW*EH);
+  undoStack = []; $('btnUndo').disabled = true;
+  S.focus = .5; $('rngFocus').value = .5; syncUI();
+
+  uploadImg(srcCanvas); resizeCanvas();
+  $('drop').hidden = true; $('viewer').hidden = false; $('tools').hidden = false;
+  $('btnSave').disabled = false; $('btnSaveDepth').disabled = false;
+  computeDepth();
+}
+
+/* ---------- 奥行き ---------- */
+function brightnessDepth(src){
+  const c = mk(src.width, src.height), x = ctx2d(c);
+  x.drawImage(src, 0, 0);
+  const id = x.getImageData(0, 0, c.width, c.height), d = id.data;
+  for (let i = 0; i < d.length; i += 4){ const v = .299*d[i] + .587*d[i+1] + .114*d[i+2]; d[i] = d[i+1] = d[i+2] = v; }
+  x.putImageData(id, 0, 0);
+  return c;
+}
+function rawToCanvas(raw){
+  const { width:w, height:h, channels:ch, data } = raw;
+  const c = mk(w, h), x = ctx2d(c), id = x.createImageData(w, h), d = id.data;
+  for (let i = 0; i < w*h; i++){ const v = data[i*ch]; d[i*4] = d[i*4+1] = d[i*4+2] = v; d[i*4+3] = 255; }
+  x.putImageData(id, 0, 0);
+  return c;
+}
+function setBase(c){
+  depthCanvas = c;
+  const t = mk(EW, EH), x = ctx2d(t); x.imageSmoothingQuality = 'high';
+  x.drawImage(c, 0, 0, EW, EH);
+  const d = x.getImageData(0, 0, EW, EH).data;
+  for (let i = 0; i < EW*EH; i++) base[i] = d[i*4] / 255;
+  rebuild();
+}
+function loadEstimator(){
+  if (estPromise) return estPromise;
+  estPromise = (async () => {
+    showProg(0); setStatus('AIモデルを読み込み中…（初回のみ）');
+    const T = await import(TRANSFORMERS_URL);
+    T.env.allowLocalModels = false;
+    const files = {};
+    const cb = d => {
+      if (d.status !== 'progress' || !d.total) return;
+      files[d.file] = [d.loaded, d.total];
+      let l = 0, t = 0; for (const [a, b] of Object.values(files)){ l += a; t += b; }
+      showProg(l / t);
+      setStatus(`AIモデルを読み込み中… ${(l/1048576).toFixed(1)} / ${(t/1048576).toFixed(1)} MB（初回のみ）`);
+    };
+    let err;
+    for (const m of MODELS){
+      try { return await T.pipeline('depth-estimation', m, { dtype:'q8', progress_callback:cb }); }
+      catch (e){ err = e; console.warn('model load failed:', m, e); }
+    }
+    throw err;
+  })();
+  estPromise.catch(() => { estPromise = null; });
+  return estPromise;
+}
+async function computeDepth(){
+  if (!srcCanvas) return;
+  const my = ++job;
+  setBase(brightnessDepth(srcCanvas)); // まず仮表示
+  if (S.depthSrc !== 'ai'){ hideProg(); setStatus('明るい所を手前にして奥行きを作りました。'); return; }
+  setStatus('AIで奥行きを推定しています…（今は仮の表示です）');
+  try {
+    const est = await loadEstimator();
+    if (my !== job) return;
+    showProg(null); setStatus('奥行きを推定中…');
+    await tick();
+    const small = scaleCanvas(srcCanvas, 768);
+    const blob = await new Promise(r => small.toBlob(r, 'image/png'));
+    const url = URL.createObjectURL(blob);
+    let out;
+    try { out = await est(url); } finally { URL.revokeObjectURL(url); }
+    if (my !== job) return;
+    const o = Array.isArray(out) ? out[0] : out;
+    setBase(rawToCanvas(o.depth));
+    hideProg();
+    setStatus('できました。「ピント」で顔をタップすると見やすくなります。');
+  } catch (e){
+    console.error(e);
+    if (my !== job) return;
+    hideProg();
+    setStatus('AIを読み込めなかったので、明るさから奥行きを作りました。ネット接続を確認して「奥行きの作り方」を選び直すと再挑戦できます。', true);
+  }
+}
+function boxBlur(z, W, H, r){
+  if (r < 1) return;
+  const tmp = new Float32Array(z.length), n = 2*r + 1;
+  for (let pass = 0; pass < 2; pass++){
+    for (let y = 0; y < H; y++){
+      const o = y*W; let sum = 0;
+      for (let i = -r; i <= r; i++) sum += z[o + clamp(i, 0, W-1)];
+      for (let x = 0; x < W; x++){ tmp[o+x] = sum / n; sum += z[o + Math.min(W-1, x+r+1)] - z[o + Math.max(0, x-r)]; }
+    }
+    for (let x = 0; x < W; x++){
+      let sum = 0;
+      for (let i = -r; i <= r; i++) sum += tmp[clamp(i, 0, H-1)*W + x];
+      for (let y = 0; y < H; y++){ z[y*W + x] = sum / n; sum += tmp[Math.min(H-1, y+r+1)*W + x] - tmp[Math.max(0, y-r)*W + x]; }
+    }
+  }
+}
+function dilate(z, W, H, r){ // 手前側を少し広げて、輪郭の色が背景側に伸びるのを防ぐ
+  if (r < 1) return;
+  const t = new Float32Array(z.length);
+  for (let y = 0; y < H; y++){ const o = y*W;
+    for (let x = 0; x < W; x++){ let m = 0; for (let k = -r; k <= r; k++){ const v = z[o + clamp(x+k, 0, W-1)]; if (v > m) m = v; } t[o+x] = m; } }
+  for (let x = 0; x < W; x++)
+    for (let y = 0; y < H; y++){ let m = 0; for (let k = -r; k <= r; k++){ const v = t[clamp(y+k, 0, H-1)*W + x]; if (v > m) m = v; } z[y*W+x] = m; }
+}
+function rebuild(){
+  if (!base) return;
+  const n = EW*EH, z = new Float32Array(n), { invert, cut, gamma } = S;
+  for (let i = 0; i < n; i++){
+    let v = base[i];
+    if (invert) v = 1 - v;
+    v = v <= cut ? 0 : (v - cut) / (1 - cut);
+    if (gamma !== 1) v = Math.pow(v, gamma);
+    z[i] = clamp(v + delta[i], 0, 1);
+  }
+  dilate(z, EW, EH, Math.round(S.dilate * EW / 1000));
+  boxBlur(z, EW, EH, Math.round(S.blur * EW / 1000));
+  finalZ = z;
+
+  let hasMask = false;
+  for (let i = 0; i < n; i++) if (mask[i] > .01){ hasMask = true; break; }
+  let m = mask;
+  if (hasMask && S.feather > 0){ m = mask.slice(); boxBlur(m, EW, EH, Math.round(S.feather * EW / 1000)); }
+
+  const u8 = new Uint8Array(n*4);
+  for (let i = 0; i < n; i++){
+    const f = hasMask ? (1 - m[i]) * S.outside + m[i] * S.boost : 1;
+    u8[i*4] = z[i] * 255;
+    u8[i*4+1] = clamp(f / 4, 0, 1) * 255;
+    u8[i*4+2] = mask[i] * 255;
+    u8[i*4+3] = 255;
+  }
+  uploadDep(u8);
+}
+function queueRebuild(){
+  if (rebuildQueued) return; rebuildQueued = true;
+  requestAnimationFrame(() => { rebuildQueued = false; rebuild(); });
+}
+
+/* ---------- ペン・ピント ---------- */
+const isBrush = () => ['mask','erase','near','far'].includes(S.tool);
+let painting = false, last = null;
+function toUv(e){
+  const r = cv.getBoundingClientRect();
+  return { x: clamp((e.clientX - r.left) / r.width, 0, 1), y: clamp((e.clientY - r.top) / r.height, 0, 1) };
+}
+function dab(p){
+  const cx = p.x * EW, cy = p.y * EH, r = Math.max(1, S.brush / 100 * EW);
+  const x0 = Math.max(0, Math.floor(cx - r)), x1 = Math.min(EW-1, Math.ceil(cx + r));
+  const y0 = Math.max(0, Math.floor(cy - r)), y1 = Math.min(EH-1, Math.ceil(cy + r));
+  const tool = S.tool;
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++){
+    const d = Math.hypot(x - cx, y - cy) / r; if (d >= 1) continue;
+    const w = (1 - d*d) ** 2, i = y*EW + x;
+    if (tool === 'mask') mask[i] += (1 - mask[i]) * w * .6;
+    else if (tool === 'erase') mask[i] *= 1 - w * .8;
+    else delta[i] = clamp(delta[i] + (tool === 'near' ? 1 : -1) * w * .025, -1, 1);
+  }
+}
+function strokeTo(p){
+  const step = Math.max(.002, S.brush / 100 / 3);
+  const dx = p.x - last.x, dy = (p.y - last.y) * EH / EW, dist = Math.hypot(dx, dy);
+  const n = Math.max(1, Math.ceil(dist / step));
+  for (let k = 1; k <= n; k++) dab({ x: last.x + (p.x - last.x)*k/n, y: last.y + (p.y - last.y)*k/n });
+  last = p; queueRebuild();
+}
+function pushUndo(){
+  undoStack.push({ m: mask.slice(), d: delta.slice() });
+  if (undoStack.length > 20) undoStack.shift();
+  $('btnUndo').disabled = false;
+}
+function undo(){
+  const s = undoStack.pop(); if (!s) return;
+  mask = s.m; delta = s.d; rebuild();
+  $('btnUndo').disabled = !undoStack.length;
+}
+function moveCursor(e){
+  const c = $('cursor');
+  if (!isBrush() || e.pointerType === 'touch'){ c.hidden = true; return; }
+  const wr = $('wrap').getBoundingClientRect(), r = cv.getBoundingClientRect();
+  const size = S.brush / 100 * r.width * 2;
+  c.hidden = false;
+  c.style.width = c.style.height = size + 'px';
+  c.style.left = (e.clientX - wr.left) + 'px'; c.style.top = (e.clientY - wr.top) + 'px';
+}
+cv.addEventListener('pointerdown', e => {
+  if (!finalZ || recording) return;
+  const p = toUv(e);
+  if (S.tool === 'focus'){
+    const i = Math.min(EH-1, Math.floor(p.y*EH)) * EW + Math.min(EW-1, Math.floor(p.x*EW));
+    S.focus = Math.round(finalZ[i] * 100) / 100; $('rngFocus').value = S.focus; syncUI();
+    setStatus('ピントを合わせました。');
+    return;
+  }
+  if (!isBrush()) return;
+  e.preventDefault(); cv.setPointerCapture(e.pointerId);
+  pushUndo(); painting = true; last = p; dab(p); queueRebuild();
+});
+cv.addEventListener('pointermove', e => { moveCursor(e); if (painting) strokeTo(toUv(e)); });
+const endPaint = () => { painting = false; };
+cv.addEventListener('pointerup', endPaint);
+cv.addEventListener('pointercancel', endPaint);
+cv.addEventListener('pointerleave', () => { $('cursor').hidden = true; });
+
+document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => {
+  S.tool = b.dataset.tool;
+  document.querySelectorAll('[data-tool]').forEach(t => t.setAttribute('aria-pressed', t === b));
+  cv.classList.toggle('paint', isBrush()); cv.classList.toggle('focus', S.tool === 'focus');
+  $('brushField').hidden = !isBrush();
+  $('toolhint').hidden = !TOOL_HINT[S.tool]; $('toolhint').textContent = TOOL_HINT[S.tool];
+  if (S.tool === 'mask' || S.tool === 'erase') $('maskCard').open = true;
+}));
+$('btnUndo').addEventListener('click', undo);
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey){ e.preventDefault(); undo(); }
+});
+$('btnClearMask').addEventListener('click', () => { if (!mask) return; pushUndo(); mask = new Float32Array(EW*EH); rebuild(); });
+$('btnClearPaint').addEventListener('click', () => { if (!delta) return; pushUndo(); delta = new Float32Array(EW*EH); rebuild(); });
+
+/* ---------- 方向ダイヤル ---------- */
+const dial = $('dial');
+(() => { // 目盛り
+  let s = '';
+  for (let a = 0; a < 360; a += 45){
+    const r = a * Math.PI / 180, c = Math.cos(r), n = Math.sin(r);
+    s += `<line class="tick" x1="${50+c*40}" y1="${50-n*40}" x2="${50+c*44}" y2="${50-n*44}"/>`;
+  }
+  $('ticks').innerHTML = s;
+})();
+function setAngle(a){
+  a = ((Math.round(a) % 360) + 360) % 360;
+  S.angle = a;
+  const r = a * Math.PI / 180, c = Math.cos(r), n = Math.sin(r);
+  const kx = 50 + c*36, ky = 50 - n*36, tx = 50 - c*36, ty = 50 + n*36;
+  $('dialKnob').setAttribute('cx', kx); $('dialKnob').setAttribute('cy', ky);
+  $('dialTail').setAttribute('cx', tx); $('dialTail').setAttribute('cy', ty);
+  const ax = $('dialAxis'); ax.setAttribute('x1', tx); ax.setAttribute('y1', ty); ax.setAttribute('x2', kx); ax.setAttribute('y2', ky);
+  $('angleOut').textContent = a + '°';
+  dial.setAttribute('aria-valuenow', a);
+}
+function angleFromEvent(e){
+  const r = dial.getBoundingClientRect();
+  let a = Math.atan2(-(e.clientY - (r.top + r.height/2)), e.clientX - (r.left + r.width/2)) * 180 / Math.PI;
+  a = (a + 360) % 360;
+  const snap = Math.round(a / 45) * 45; // 45度刻みの近くは吸い付く
+  return Math.abs(a - snap) < 4 ? snap : a;
+}
+let dialDrag = false;
+dial.addEventListener('pointerdown', e => { dialDrag = true; dial.setPointerCapture(e.pointerId); setAngle(angleFromEvent(e)); });
+dial.addEventListener('pointermove', e => { if (dialDrag) setAngle(angleFromEvent(e)); });
+dial.addEventListener('pointerup', () => { dialDrag = false; });
+dial.addEventListener('dblclick', () => setAngle(0));
+dial.addEventListener('keydown', e => {
+  const d = { ArrowLeft:5, ArrowUp:5, ArrowRight:-5, ArrowDown:-5 }[e.key];
+  if (d){ e.preventDefault(); setAngle(S.angle + (e.shiftKey ? d*3 : d)); }
+});
+setAngle(0);
+
+/* ---------- 設定UI ---------- */
+const FMT = { amp:v => v.toFixed(1) + '%', period:v => v.toFixed(1) + '秒', focus:v => Math.round(v*100) + '%',
+  cut:v => Math.round(v*100) + '%', gamma:v => v.toFixed(2), blur:v => String(v), dilate:v => String(v),
+  boost:v => v.toFixed(1) + '倍', outside:v => Math.round(v*100) + '%', feather:v => String(v), bokeh:v => Math.round(v*100) + '%' };
+const DEPTH_KEYS = ['invert','cut','gamma','blur','dilate','boost','outside','feather'];
+function syncUI(){
+  document.querySelectorAll('output[data-for]').forEach(o => { const k = o.dataset.for; o.textContent = FMT[k](S[k]); });
+  $('dirField').hidden = S.motion === 'orbit';
+  $('orbitField').hidden = S.motion !== 'orbit';
+  $('fmtNote').textContent = FMT_NOTE[S.fmt];
+}
+document.querySelectorAll('[data-key]').forEach(el => {
+  const k = el.dataset.key;
+  el.addEventListener(el.type === 'range' ? 'input' : 'change', () => {
+    if (el.type === 'radio' && !el.checked) return;
+    let v = el.type === 'checkbox' ? el.checked : el.value;
+    if (el.type === 'range' || 'num' in el.dataset) v = parseFloat(v);
+    S[k] = v;
+    syncUI();
+    if (k === 'depthSrc') computeDepth();
+    else if (DEPTH_KEYS.includes(k)) queueRebuild();
+    else if (k === 'outW') resizeCanvas();
+  });
+});
+
+/* ---------- 書き出し ---------- */
+function setBusy(b){
+  busyNow = b;
+  $('btnSave').disabled = b; $('btnNew').disabled = b;
+}
+function captureFrames(){
+  const two = S.motion === 'two';
+  const N = two ? 2 : Math.max(4, Math.round(S.period * 20));
+  const delay = two ? S.period * 500 : S.period * 1000 / N;
+  const W = cv.width, H = cv.height, frames = [], row = W*4;
+  for (let i = 0; i < N; i++){
+    const t = two ? (i === 0 ? .25 : .75) * S.period : i / N * S.period;
+    draw(t, 0);
+    const px = new Uint8Array(W*H*4), out = new Uint8Array(W*H*4);
+    gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    for (let y = 0; y < H; y++) out.set(px.subarray((H-1-y)*row, (H-y)*row), y*row); // 上下反転
+    frames.push(out);
+  }
+  return { frames, delay, W, H };
+}
+async function saveGif(){
+  const { GIFEncoder, quantize, applyPalette } = await import(GIFENC_URL);
+  const { frames, delay, W, H } = captureFrames();
+  const gif = GIFEncoder();
+  const palette = quantize(frames[0], 256); // 全コマ共通パレットでちらつきを防ぐ
+  for (let i = 0; i < frames.length; i++){
+    gif.writeFrame(applyPalette(frames[i], palette), W, H, { palette, delay });
+    showProg((i+1) / frames.length);
+    if (i % 4 === 3) await tick();
+  }
+  gif.finish();
+  return new Blob([gif.bytes()], { type:'image/gif' });
+}
+
+/* APNG（CompressionStream で自前エンコード） */
+const CRC = (() => { const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++){ let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+  return t; })();
+function crc32(bufs){ let c = 0xFFFFFFFF; for (const b of bufs) for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function chunk(type, data){
+  const head = new Uint8Array(8), dv = new DataView(head.buffer);
+  dv.setUint32(0, data.length);
+  const tb = new TextEncoder().encode(type); head.set(tb, 4);
+  const tail = new Uint8Array(4); new DataView(tail.buffer).setUint32(0, crc32([tb, data]));
+  return [head, data, tail];
+}
+async function zlib(u8){
+  const s = new Blob([u8]).stream().pipeThrough(new CompressionStream('deflate'));
+  return new Uint8Array(await new Response(s).arrayBuffer());
+}
+function filterSub(px, W, H){
+  const row = W*4, out = new Uint8Array((row + 1) * H);
+  for (let y = 0; y < H; y++){
+    const o = y*(row+1), s = y*row; out[o] = 1;
+    for (let i = 0; i < row; i++) out[o+1+i] = (px[s+i] - (i >= 4 ? px[s+i-4] : 0)) & 255;
+  }
+  return out;
+}
+async function saveApng(){
+  const { frames, delay, W, H } = captureFrames();
+  const parts = [new Uint8Array([137,80,78,71,13,10,26,10])];
+  const u32 = (dv, o, v) => dv.setUint32(o, v);
+  const ihdr = new Uint8Array(13), ih = new DataView(ihdr.buffer);
+  u32(ih, 0, W); u32(ih, 4, H); ihdr[8] = 8; ihdr[9] = 6;
+  parts.push(...chunk('IHDR', ihdr));
+  const actl = new Uint8Array(8), ac = new DataView(actl.buffer); u32(ac, 0, frames.length); u32(ac, 4, 0);
+  parts.push(...chunk('acTL', actl));
+  let seq = 0;
+  for (let i = 0; i < frames.length; i++){
+    const fc = new Uint8Array(26), f = new DataView(fc.buffer);
+    u32(f, 0, seq++); u32(f, 4, W); u32(f, 8, H); u32(f, 12, 0); u32(f, 16, 0);
+    f.setUint16(20, Math.round(delay)); f.setUint16(22, 1000);
+    parts.push(...chunk('fcTL', fc));
+    const z = await zlib(filterSub(frames[i], W, H));
+    if (i === 0) parts.push(...chunk('IDAT', z));
+    else { const fd = new Uint8Array(4 + z.length); new DataView(fd.buffer).setUint32(0, seq++); fd.set(z, 4); parts.push(...chunk('fdAT', fd)); }
+    showProg((i+1) / frames.length);
+  }
+  parts.push(...chunk('IEND', new Uint8Array(0)));
+  return new Blob(parts, { type:'image/png' });
+}
+async function saveVideo(){
+  if (!window.MediaRecorder || !cv.captureStream) throw new Error('このブラウザは動画保存に対応していません。');
+  const types = ['video/mp4;codecs=avc1.42E01F', 'video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'];
+  const mime = types.find(t => MediaRecorder.isTypeSupported(t));
+  if (!mime) throw new Error('このブラウザは動画保存に対応していません。');
+  const loops = Math.max(2, Math.ceil(4 / S.period)), dur = loops * S.period * 1000;
+  const stream = cv.captureStream(30);
+  const rec = new MediaRecorder(stream, { mimeType:mime, videoBitsPerSecond:8e6 });
+  const chunks = [];
+  rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+  const stopped = new Promise(r => rec.onstop = r);
+  setStatus(`動画を録画中…（${(dur/1000).toFixed(1)}秒）。このタブを開いたままにしてください。`);
+  recording = true; recStart = performance.now(); rec.start();
+  while (performance.now() - recStart < dur){ showProg((performance.now() - recStart) / dur); await new Promise(r => setTimeout(r, 100)); }
+  rec.stop(); await stopped;
+  recording = false; stream.getTracks().forEach(t => t.stop());
+  return { blob: new Blob(chunks, { type: mime.split(';')[0] }), ext: mime.includes('mp4') ? 'mp4' : 'webm' };
+}
+$('btnSave').addEventListener('click', async () => {
+  if (!finalZ || busyNow) return;
+  setBusy(true); showProg(0);
+  try {
+    let blob, name;
+    if (S.fmt === 'gif'){ setStatus('GIFを作成中…'); await tick(); blob = await saveGif(); name = 'yurayura.gif'; }
+    else if (S.fmt === 'apng'){ setStatus('APNGを作成中…'); await tick(); blob = await saveApng(); name = 'yurayura.png'; }
+    else { const r = await saveVideo(); blob = r.blob; name = 'yurayura.' + r.ext; }
+    download(blob, name);
+    const over = S.fmt !== 'video' && blob.size > X_LIMIT;
+    setStatus(`保存しました（${fmtSize(blob.size)}）` + (over ? '。Xの上限15MBを超えているので、横幅を小さくするか動画で保存してください。' : '。'), over);
+  } catch (e){
+    console.error(e);
+    recording = false;
+    setStatus(e.message && /ブラウザ/.test(e.message) ? e.message : '保存できませんでした。ネット接続を確認してもう一度試してください。', true);
+  }
+  hideProg(); setBusy(false);
+});
+$('btnSaveDepth').addEventListener('click', () => {
+  if (!finalZ) return;
+  const c = mk(EW, EH), x = ctx2d(c), id = x.createImageData(EW, EH), d = id.data;
+  for (let i = 0; i < EW*EH; i++){ const v = finalZ[i]*255; d[i*4] = d[i*4+1] = d[i*4+2] = v; d[i*4+3] = 255; }
+  x.putImageData(id, 0, 0);
+  c.toBlob(b => download(b, 'depth.png'), 'image/png');
+});
+
+/* ---------- 画像の入力 ---------- */
+const drop = $('drop');
+drop.addEventListener('click', () => $('file').click());
+drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); $('file').click(); } });
+$('file').addEventListener('change', e => { loadFile(e.target.files[0]); e.target.value = ''; });
+$('btnNew').addEventListener('click', () => $('file').click());
+document.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+document.addEventListener('dragleave', e => { if (!e.relatedTarget) drop.classList.remove('over'); });
+document.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); loadFile(e.dataTransfer.files[0]); });
+document.addEventListener('paste', e => {
+  for (const it of e.clipboardData.items){ if (it.type.startsWith('image/')){ loadFile(it.getAsFile()); break; } }
+});
+
+/* ---------- ヘルプ ---------- */
+const help = $('help');
+$('btnHelp').addEventListener('click', () => help.showModal());
+$('btnHelpClose').addEventListener('click', () => help.close());
+help.addEventListener('click', e => { if (e.target === help) help.close(); }); // 外側クリックで閉じる
+
+/* ---------- 起動 ---------- */
+syncUI();
+try {
+  if (!initGL()) throw new Error('no webgl');
+  requestAnimationFrame(loop);
+} catch (e){
+  console.error(e);
+  setStatus('このブラウザではWebGLが使えないため動きません。ChromeやEdgeの最新版で開いてください。', true);
+}
+</script>
+</body>
+</html>
