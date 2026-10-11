@@ -908,13 +908,48 @@ function captureFrames(){
   }
   return { frames, delay, W, H };
 }
+/* GIFの減色：肌などのなめらかな所に色を多く割り当てたパレットを、複数コマから作る */
+function paletteSample(frames, W, H){
+  const lum = (p, i) => .299*p[i] + .587*p[i+1] + .114*p[i+2];
+  const N = frames.length, picks = [...new Set([0, N/4|0, N/2|0, 3*N/4|0])];
+  const out = new Uint8Array(picks.length * W * H * 4); let o = 0;
+  for (const k of picks){ const p = frames[k];
+    for (let y = 0; y < H-1; y++) for (let x = 0; x < W-1; x++){ const i = (y*W + x)*4;
+      const g = Math.abs(lum(p,i) - lum(p,i+4)) + Math.abs(lum(p,i) - lum(p,i+W*4));
+      if (g >= 10 && (x & 3 || y & 3)) continue; // 細かい模様の所は16分の1に間引く
+      out[o++] = p[i]; out[o++] = p[i+1]; out[o++] = p[i+2]; out[o++] = 255;
+    }
+  }
+  return out.subarray(0, o);
+}
+/* gifenc の applyPalette は RGB565 に丸めてから色を選ぶため、わずかな色の揺れで隣の色に飛んでチカチカする。7bit精度で最近傍色を選ぶ */
+let palCache = null;
+function makeIndexer(palette){
+  palCache = palCache || new Int16Array(1 << 21); palCache.fill(-1);
+  const n = palette.length, pr = palette.map(c => c[0]), pg = palette.map(c => c[1]), pb = palette.map(c => c[2]);
+  return px => {
+    const idx = new Uint8Array(px.length / 4);
+    for (let j = 0; j < idx.length; j++){
+      const r = px[j*4], g = px[j*4+1], b = px[j*4+2], key = (r >> 1) << 14 | (g >> 1) << 7 | (b >> 1);
+      let k = palCache[key];
+      if (k < 0){
+        let best = Infinity;
+        for (let m = 0; m < n; m++){ const dr = r - pr[m], dg = g - pg[m], db = b - pb[m], d = 2*dr*dr + 4*dg*dg + 3*db*db; if (d < best){ best = d; k = m; } }
+        palCache[key] = k;
+      }
+      idx[j] = k;
+    }
+    return idx;
+  };
+}
 async function saveGif(){
-  const { GIFEncoder, quantize, applyPalette } = await import(GIFENC_URL);
+  const { GIFEncoder, quantize } = await import(GIFENC_URL);
   const { frames, delay, W, H } = captureFrames();
   const gif = GIFEncoder();
-  const palette = quantize(frames[0], 256); // 全コマ共通パレットでちらつきを防ぐ
+  const palette = quantize(paletteSample(frames, W, H), 256); // 全コマ共通パレットでちらつきを防ぐ
+  const toIndex = makeIndexer(palette);
   for (let i = 0; i < frames.length; i++){
-    gif.writeFrame(applyPalette(frames[i], palette), W, H, { palette, delay });
+    gif.writeFrame(toIndex(frames[i]), W, H, { palette, delay });
     showProg((i+1) / frames.length);
     if (i % 4 === 3) await tick();
   }
